@@ -1,10 +1,12 @@
 use serde_repr::*;
 use thiserror::Error;
 
-use flowy_derive::ProtoBuf_Enum;
+// Temporarily disabled ProtoBuf_Enum due to macro conflicts (Phase 2B)
+// use flowy_derive::ProtoBuf_Enum;
 
 #[derive(
-  Debug, Default, Clone, PartialEq, Eq, Error, Serialize_repr, Deserialize_repr, ProtoBuf_Enum,
+  Debug, Default, Clone, PartialEq, Eq, Error, Serialize_repr, Deserialize_repr,
+  // ProtoBuf_Enum,  // Temporarily disabled
 )]
 #[repr(u8)]
 pub enum ErrorCode {

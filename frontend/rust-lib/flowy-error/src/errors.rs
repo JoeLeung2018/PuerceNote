@@ -6,22 +6,24 @@ use thiserror::Error;
 use tokio::task::JoinError;
 use validator::{ValidationError, ValidationErrors};
 
-use flowy_derive::ProtoBuf;
+// Temporarily disabled ProtoBuf derive due to macro conflicts (Phase 2B)
+// use flowy_derive::ProtoBuf;
 
 use crate::code::ErrorCode;
 
 pub type FlowyResult<T> = anyhow::Result<T, FlowyError>;
 
-#[derive(Debug, Default, Clone, ProtoBuf, Error)]
+#[derive(Debug, Default, Clone, Error)]
+// #[derive(Debug, Default, Clone, ProtoBuf, Error)]  // Temporarily disabled ProtoBuf
 #[error("code:{code}, message:{msg}")]
 pub struct FlowyError {
-  #[pb(index = 1)]
+  // #[pb(index = 1)]  // Temporarily disabled
   pub code: ErrorCode,
 
-  #[pb(index = 2)]
+  // #[pb(index = 2)]  // Temporarily disabled
   pub msg: String,
 
-  #[pb(index = 3)]
+  // #[pb(index = 3)]  // Temporarily disabled
   pub payload: Vec<u8>,
 }
 

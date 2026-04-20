@@ -29,10 +29,20 @@ pub struct SubscriptionConfig {
     // WalletConnect
     pub walletconnect_project_id: String,
 
-    // AI token configuration
+    // AI token configuration (Optimized in Phase 2B)
     pub pro_monthly_token_limit: u32,
     pub team_monthly_token_limit: u32,
-    pub token_cost_per_1m: f64,
+    pub token_cost_per_1k: f64,      // $0.01 per 1K tokens (100x increase from Phase 1)
+
+    // Subscription pricing (Optimized in Phase 2B - 50% increase)
+    pub pro_price_monthly_usd: f64,  // $14.99/month (was $9.99)
+    pub team_price_monthly_usd: f64, // $49.99/month (was $29.99)
+    pub pro_price_annual_usd: f64,   // $149.99/year (was $99.99)
+    pub team_price_annual_usd: f64,  // $499.99/year (was $299.99)
+
+    // Pricing in other currencies
+    pub pro_price_monthly_cny: f64,  // ¥99.99/month
+    pub team_price_monthly_cny: f64, // ¥349.99/month
 
     // vLLM configuration
     pub vllm_proxy_url: String,
@@ -123,10 +133,42 @@ impl SubscriptionConfig {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(500_000),
 
-            token_cost_per_1m: env::var("TOKEN_COST_PER_1M")
+            // Phase 2B: Token cost optimized to $0.01 per 1K tokens (100x increase)
+            token_cost_per_1k: env::var("TOKEN_COST_PER_1K")
                 .ok()
                 .and_then(|v| v.parse().ok())
-                .unwrap_or(0.0001),
+                .unwrap_or(0.01),  // $0.01 per 1K tokens
+
+            // Phase 2B: Subscription pricing optimized 50% increase
+            pro_price_monthly_usd: env::var("PRO_PRICE_MONTHLY_USD")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(14.99),  // Increased from $9.99
+
+            team_price_monthly_usd: env::var("TEAM_PRICE_MONTHLY_USD")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(49.99),  // Increased from $29.99
+
+            pro_price_annual_usd: env::var("PRO_PRICE_ANNUAL_USD")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(149.99),  // ~$12.50/month annually
+
+            team_price_annual_usd: env::var("TEAM_PRICE_ANNUAL_USD")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(499.99),  // ~$41.66/month annually
+
+            pro_price_monthly_cny: env::var("PRO_PRICE_MONTHLY_CNY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(99.99),  // ¥99.99/month for China market
+
+            team_price_monthly_cny: env::var("TEAM_PRICE_MONTHLY_CNY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(349.99),  // ¥349.99/month for China market
 
             vllm_proxy_url: env::var("VLLM_PROXY_URL")
                 .unwrap_or_else(|_| "http://127.0.0.1:8000/v1".to_string()),
