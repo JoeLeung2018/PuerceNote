@@ -3,12 +3,27 @@
 //! Supports multiple payment providers:
 //! - Lemon Squeezy (credit cards)
 //! - Web3/Polygon (USDC/USDT)
+//! - WalletConnect 2.0
+//! - MetaMask Direct Integration
 
 pub mod lemon_squeezy;
 pub mod web3_payment;
+pub mod walletconnect;
+pub mod metamask;
 
 use crate::error::SubscriptionResult;
 use serde::{Deserialize, Serialize};
+
+// Re-export Web3 types
+pub use walletconnect::{
+    BlockchainNetwork, BlockchainTransaction, SmartContractInteraction, TokenType,
+    TransactionStatus, Web3PaymentProcessor, Web3PaymentRequest, WalletConnectClient,
+    WalletConnectSession, GasEstimate,
+};
+pub use metamask::{
+    MetaMaskAccount, MetaMaskClient, MetaMaskProvider, NetworkSwitchRequest, 
+    SignedTransaction, Transaction as MetaMaskTransaction,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PaymentProvider {
