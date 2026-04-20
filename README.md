@@ -1,12 +1,12 @@
 <h1 align="center" style="border-bottom: none">
     <b>
-        <a href="https://www.appflowy.com">AppFlowy</a><br>
+        <a href="https://github.com/JoeLeung2018/AppFlowy">PuerceNote</a><br>
     </b>
-    ⭐️  The Open Source Alternative To Notion  ⭐️ <br>
+    ⭐️  AI-Powered Note Taking & Collaboration  ⭐️ <br>
 </h1>
 
 <p align="center">
-AppFlowy is the AI workspace where you achieve more without losing control of your data
+PuerceNote is the commercial AI-powered note-taking workspace where you achieve more without losing control of your data. Built on AppFlowy with advanced AI capabilities, local privacy protection, and Web3 integration.
 </p>
 
 <p align="center">
