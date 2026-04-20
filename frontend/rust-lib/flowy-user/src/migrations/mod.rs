@@ -5,6 +5,7 @@ pub mod anon_user_workspace;
 pub mod doc_key_with_workspace;
 pub mod document_empty_content;
 pub mod migration;
+pub mod payment_tables_v1;
 pub mod session_migration;
 mod util;
 pub mod workspace_and_favorite_v1;
