@@ -2,10 +2,9 @@
 //! Phase 2B.Vector: Tracks semantic search, embeddings, and vector operations
 
 use crate::error::{SubscriptionError, SubscriptionResult};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Datelike, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use std::time::Instant;
 
 // ============== Vector Billing Models ==============
 
@@ -99,16 +98,28 @@ pub struct VectorQuotaStatus {
 impl VectorQuotaStatus {
     pub fn new(user_id: String, workspace_id: String, plan_type: String) -> Self {
         let now = Utc::now();
-        let next_reset = now.with_month((now.month() % 12) + 1)
-            .unwrap_or(now)
-            .with_day(1)
-            .unwrap_or(now);
+        
+        // Calculate next reset date (first of next month)
+        let (next_year, next_month) = if now.month() == 12 {
+            (now.year() + 1, 1)
+        } else {
+            (now.year(), now.month() + 1)
+        };
+        
+        let next_reset = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(next_year, next_month, 1)
+                .unwrap_or(NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap()),
+            NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+        );
+        let next_reset = DateTime::<Utc>::from_naive_utc_and_offset(next_reset, Utc);
+        
+        let monthly_vector_limit = Self::get_limit_for_plan(&plan_type);
         
         Self {
             user_id,
             workspace_id,
             plan_type,
-            monthly_vector_limit: Self::get_limit_for_plan(&plan_type),
+            monthly_vector_limit,
             vector_operations_used: 0,
             tokens_used: 0,
             cost_to_date: 0.0,
@@ -175,7 +186,7 @@ impl VectorBillingService {
         let mut record = VectorUsageRecord::new(
             user_id.to_string(),
             workspace_id.to_string(),
-            operation,
+            operation.clone(),
             tokens_used,
         );
         

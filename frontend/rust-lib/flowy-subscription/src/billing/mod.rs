@@ -1,8 +1,17 @@
 //! Billing and token quota management module
 
+pub mod vector_billing;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use crate::error::SubscriptionResult;
+
+pub use vector_billing::{
+    VectorBillingService,
+    VectorOperation,
+    VectorUsageRecord,
+    VectorQuotaStatus,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TokenQuota {

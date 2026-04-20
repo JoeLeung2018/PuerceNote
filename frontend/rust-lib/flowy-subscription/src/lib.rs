@@ -13,6 +13,7 @@ pub mod payment;
 pub mod subscription;
 pub mod billing;
 pub mod event_handler;
+pub mod webhook;
 pub mod error;
 pub mod config;
 pub mod repository;
@@ -22,6 +23,7 @@ pub use error::{SubscriptionError, SubscriptionResult};
 pub use payment::{PaymentClient, PaymentProvider};
 pub use subscription::{Subscription, SubscriptionPlan, SubscriptionStatus, SubscriptionService};
 pub use billing::{BillingService, TokenQuota, calculate_token_cost, count_tokens_local};
+pub use webhook::{WebhookProcessor, WebhookProvider, WebhookEventType};
 pub use config::SubscriptionConfig;
 pub use repository::{SubscriptionRepository, PaymentOrder, SubscriptionRecord, WebhookEventLog};
 
