@@ -124,6 +124,80 @@ upstream  https://github.com/AppFlowy-IO/AppFlowy.git (push)
   - 成功/失败处理
 ```
 
+---
+
+### M2.1: 数据库存储层与Protobuf定义
+
+**时间**: 2026-04-21  
+**分类**: Feature | Backend | Database
+
+**完成工作**:
+
+1. **创建repository.rs数据库抽象层** (350+ lines)
+   - `PaymentOrder`: 订单记录，包含Lemon Squeezy ID映射
+   - `SubscriptionRecord`: 用户订阅状态管理（free/pro/team）
+   - `WebhookEventLog`: 事件审计跟踪和处理状态
+   - `SubscriptionRepository`: 25个数据库方法（TODO SQL stubs）
+     - 订单: save_order, get_order, get_order_by_lemon_id, list_user_orders, update_order_status
+     - 订阅: save_subscription, get_user_subscription, update_subscription_status, cancel_subscription
+     - Webhook: log_webhook_event, update_webhook_status, get_webhook_event, list_unprocessed_webhooks
+     - 事务: begin_transaction, commit_transaction, rollback_transaction
+
+2. **payment.proto Protobuf定义** (110+ lines)
+   - 核心消息: PaymentOrderProto, SubscriptionStatusProto, WebhookEventProto, UserAIQuotaProto, AIUsageLogProto
+   - RPC服务: PaymentService (4个端点)
+     - CreateCheckout: 启动支付流程
+     - GetSubscriptionStatus: 查询订阅状态
+     - CancelSubscription: 取消订阅
+     - UpdatePaymentMethod: 更新支付方式
+   - 请求/响应消息类型: CheckoutRequest/Response, GetSubscriptionRequest, CancelSubscriptionRequest/Response
+
+3. **工作区集成**
+   - 将 flowy-subscription 添加到 rust-lib/Cargo.toml members列表
+   - 在 workspace.dependencies 中注册
+   - 更新 flowy-subscription/Cargo.toml:
+     - 移除 sqlx (与 flowy-sqlite 的 libsqlite3-sys 版本冲突)
+     - 将 Web3 依赖改为可选特性
+     - 简化依赖: reqwest, tokio, serde, chrono, uuid, hmac, hex, sha2, tracing
+   - 在 lib.rs 中重新导出 repository 类型
+
+4. **项目文档**
+   - PHASE_1_SUMMARY.md: Phase 1完成总结（1,759行新代码）
+   - PHASE_2A_PLAN.md: Phase 2A详细计划（6项任务，12小时估计）
+
+**技术细节**:
+
+| 组件 | 实现状态 | 备注 |
+|------|--------|------|
+| repository.rs | ✓ Framework | 等待SQL实现 |
+| payment.proto | ✓ Definition | 待protobuf编译配置 |
+| Data structures | ✓ Complete | PaymentOrder, SubscriptionRecord, WebhookEventLog |
+| Method signatures | ✓ Complete | 25个方法，包含完整的错误处理和logging |
+| SQL implementation | ⏳ TODO | 使用flowy-sqlite Diesel ORM |
+| Protobuf code generation | ⏳ TODO | 需要build.rs配置 |
+
+**代码质量检查**:
+- ✓ rustfmt 格式验证
+- ✓ 所有结构都包含适当的derive宏和文档注释
+- ✓ 单元测试用例 (test_payment_order_creation, test_subscription_creation, test_webhook_event_creation)
+- ⏳ 集成测试 (待实现)
+
+**Git提交**: `379c160dc` - [Feature] Subscription: Add database repository layer and Protobuf definitions
+
+**后续步骤**:
+1. 在repository.rs中实现SQL查询（使用flowy-sqlite的Diesel ORM）
+2. 完成event_handler.rs的业务逻辑
+3. 配置Protobuf代码生成（build.rs）
+4. 实现Flutter支付UI层
+5. 创建REST API端点
+
+**技术栈**:
+- 数据库: SQLite (via flowy-sqlite + Diesel ORM)
+- 序列化: serde_json + Protobuf
+- HTTP: reqwest (异步客户端)
+- 密码: hmac-sha256 (Webhook签名验证)
+- 日志: tracing + tokio
+
 ### Phase 2B: 自建Token计费系统
 
 **计划完成日期**: 2026-05-01
@@ -208,8 +282,9 @@ upstream  https://github.com/AppFlowy-IO/AppFlowy.git (push)
 **当前分支**: `feature/commercial-edition-v1.0`
 
 **最近提交**：
-1. `ee0b16035` - [Database] Payment: Add database migrations for payment system
-2. `f10b9a91f` - [Configuration] Project: Rename AppFlowy to PuerceNote
+1. `379c160dc` - [Feature] Subscription: Add database repository layer and Protobuf definitions
+2. `ee0b16035` - [Database] Payment: Add database migrations for payment system
+3. `f10b9a91f` - [Configuration] Project: Rename AppFlowy to PuerceNote
 
 ```
 main (官方主分支，仅sync)
