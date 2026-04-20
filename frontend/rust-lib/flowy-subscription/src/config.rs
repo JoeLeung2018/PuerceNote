@@ -4,7 +4,7 @@ use crate::error::{SubscriptionError, SubscriptionResult};
 use serde::{Deserialize, Serialize};
 use std::env;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct SubscriptionConfig {
     // Lemon Squeezy configuration
     pub lemon_squeezy_api_key: String,

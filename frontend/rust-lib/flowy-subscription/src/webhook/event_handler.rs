@@ -3,10 +3,9 @@
 
 use crate::error::{SubscriptionError, SubscriptionResult};
 use chrono::{DateTime, Utc};
-use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
+use serde_json::Value;
+use sha2::Sha256;
 use hmac::{Hmac, Mac};
-use uuid::Uuid;
 use std::sync::Arc;
 
 type HmacSha256 = Hmac<Sha256>;
@@ -21,6 +20,7 @@ pub enum WebhookProvider {
     PolygonListener,
 }
 
+#[derive(Debug, Clone)]
 #[derive(Debug, Clone)]
 pub enum WebhookEventType {
     // Lemon Squeezy events
@@ -120,7 +120,7 @@ impl WebhookProcessor {
         
         // Step 3: Parse payload
         let payload: Value = serde_json::from_str(raw_body)
-            .map_err(|e| SubscriptionError::InvalidRequest(e.to_string()))?;
+            .map_err(|e| SubscriptionError::InvalidPayload(e.to_string()))?;
         
         // Step 4: Determine event type and route
         let event_type = self.extract_event_type(&provider, &payload)?;
@@ -221,7 +221,7 @@ impl WebhookProcessor {
     
     fn compute_hmac_sha256(&self, secret: &str, message: &str) -> SubscriptionResult<String> {
         let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-            .map_err(|_| SubscriptionError::InvalidRequest("Invalid secret".to_string()))?;
+            .map_err(|_| SubscriptionError::InvalidPayload("Invalid secret".to_string()))?;
         mac.update(message.as_bytes());
         Ok(hex::encode(mac.finalize().into_bytes()))
     }
@@ -242,7 +242,7 @@ impl WebhookProcessor {
                     .get("meta")
                     .and_then(|m| m.get("event_name"))
                     .and_then(|n| n.as_str())
-                    .ok_or(SubscriptionError::InvalidRequest("Missing event_name".to_string()))?;
+                    .ok_or(SubscriptionError::InvalidPayload("Missing event_name".to_string()))?;
                 
                 Ok(match event_name {
                     "order:created" => WebhookEventType::OrderCreated,
@@ -250,7 +250,7 @@ impl WebhookProcessor {
                     "subscription:created" => WebhookEventType::SubscriptionCreated,
                     "subscription:updated" => WebhookEventType::SubscriptionUpdated,
                     "subscription:cancelled" => WebhookEventType::SubscriptionCancelled,
-                    _ => return Err(SubscriptionError::InvalidRequest("Unknown event type".to_string())),
+                    _ => return Err(SubscriptionError::UnknownEventType),
                 })
             }
             WebhookProvider::PayPal => {
@@ -258,13 +258,13 @@ impl WebhookProcessor {
                 let event_type = payload
                     .get("event_type")
                     .and_then(|t| t.as_str())
-                    .ok_or(SubscriptionError::InvalidRequest("Missing event_type".to_string()))?;
+                    .ok_or(SubscriptionError::InvalidPayload("Missing event_type".to_string()))?;
                 
                 Ok(match event_type {
                     "PAYMENT.CAPTURE.COMPLETED" => WebhookEventType::PaymentCaptureCompleted,
                     "BILLING.SUBSCRIPTION.CREATED" => WebhookEventType::BillingSubscriptionCreated,
                     "BILLING.SUBSCRIPTION.CANCELLED" => WebhookEventType::BillingSubscriptionCancelled,
-                    _ => return Err(SubscriptionError::InvalidRequest("Unknown event type".to_string())),
+                    _ => return Err(SubscriptionError::UnknownEventType),
                 })
             }
             WebhookProvider::Paddle => {
@@ -273,13 +273,13 @@ impl WebhookProcessor {
                     .get("event")
                     .and_then(|e| e.get("type"))
                     .and_then(|t| t.as_str())
-                    .ok_or(SubscriptionError::InvalidRequest("Missing event.type".to_string()))?;
+                    .ok_or(SubscriptionError::InvalidPayload("Missing event.type".to_string()))?;
                 
                 Ok(match event_type {
                     "transaction.completed" => WebhookEventType::TransactionCompleted,
                     "subscription.paused" => WebhookEventType::SubscriptionPaused,
                     "subscription.resumed" => WebhookEventType::SubscriptionResumed,
-                    _ => return Err(SubscriptionError::InvalidRequest("Unknown event type".to_string())),
+                    _ => return Err(SubscriptionError::UnknownEventType),
                 })
             }
             WebhookProvider::PolygonListener => {
@@ -287,12 +287,12 @@ impl WebhookProcessor {
                 let status = payload
                     .get("status")
                     .and_then(|s| s.as_str())
-                    .ok_or(SubscriptionError::InvalidRequest("Missing status".to_string()))?;
+                    .ok_or(SubscriptionError::InvalidPayload("Missing status".to_string()))?;
                 
                 Ok(match status {
                     "confirmed" => WebhookEventType::TransactionConfirmed,
                     "failed" => WebhookEventType::TransactionFailed,
-                    _ => return Err(SubscriptionError::InvalidRequest("Unknown event type".to_string())),
+                    _ => return Err(SubscriptionError::UnknownEventType),
                 })
             }
         }
@@ -320,7 +320,7 @@ impl WebhookProcessor {
             WebhookEventType::SubscriptionCancelled => {
                 self.handle_lemon_subscription_cancelled(payload).await
             }
-            _ => Err(SubscriptionError::InvalidRequest("Unmatched event type".to_string())),
+            _ => Err(SubscriptionError::UnmatchedEventType),
         }
     }
     
@@ -330,21 +330,21 @@ impl WebhookProcessor {
             .get("data")
             .and_then(|d| d.get("id"))
             .and_then(|id| id.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing order ID".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing order ID".to_string()))?;
         
         let user_id = payload
             .get("data")
             .and_then(|d| d.get("attributes"))
             .and_then(|a| a.get("customer_email"))
             .and_then(|e| e.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing customer email".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing customer email".to_string()))?;
         
         let amount_cents = payload
             .get("data")
             .and_then(|d| d.get("attributes"))
             .and_then(|a| a.get("total_formatted"))
             .and_then(|t| t.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing amount".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing amount".to_string()))?;
         
         // Log order (database save will be implemented when repository_v2 is ready)
         tracing::info!(
@@ -365,14 +365,14 @@ impl WebhookProcessor {
             .get("data")
             .and_then(|d| d.get("id"))
             .and_then(|id| id.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing subscription ID".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing subscription ID".to_string()))?;
         
         let user_id = payload
             .get("data")
             .and_then(|d| d.get("attributes"))
             .and_then(|a| a.get("customer_email"))
             .and_then(|e| e.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing customer email".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing customer email".to_string()))?;
         
         let plan_type = extract_plan_from_payload(payload)?;
         
@@ -395,7 +395,7 @@ impl WebhookProcessor {
             .get("data")
             .and_then(|d| d.get("id"))
             .and_then(|id| id.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing subscription ID".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing subscription ID".to_string()))?;
         
         tracing::info!("✅ Lemon Squeezy subscription updated: {}", sub_id);
         Ok(format!("Subscription {} updated", sub_id))
@@ -406,7 +406,7 @@ impl WebhookProcessor {
             .get("data")
             .and_then(|d| d.get("id"))
             .and_then(|id| id.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing subscription ID".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing subscription ID".to_string()))?;
         
         tracing::info!("⚠️ Lemon Squeezy subscription cancelled: {}", sub_id);
         Ok(format!("Subscription {} cancelled", sub_id))
@@ -425,7 +425,7 @@ impl WebhookProcessor {
             WebhookEventType::PaymentCaptureCompleted => {
                 self.handle_paypal_payment_completed(payload).await
             }
-            _ => Err(SubscriptionError::InvalidRequest("Unmatched event type".to_string())),
+            _ => Err(SubscriptionError::UnmatchedEventType),
         }
     }
     
@@ -436,7 +436,7 @@ impl WebhookProcessor {
             .and_then(|s| s.get("related_ids"))
             .and_then(|ri| ri.get("order_id"))
             .and_then(|o| o.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing order ID".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing order ID".to_string()))?;
         
         tracing::info!("✅ PayPal payment completed: {}", order_id);
         Ok(format!("PayPal order {} processed", order_id))
@@ -455,7 +455,7 @@ impl WebhookProcessor {
             WebhookEventType::TransactionCompleted => {
                 self.handle_paddle_transaction_completed(payload).await
             }
-            _ => Err(SubscriptionError::InvalidRequest("Unmatched event type".to_string())),
+            _ => Err(SubscriptionError::UnmatchedEventType),
         }
     }
     
@@ -465,7 +465,7 @@ impl WebhookProcessor {
             .and_then(|e| e.get("data"))
             .and_then(|d| d.get("id"))
             .and_then(|id| id.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing transaction ID".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing transaction ID".to_string()))?;
         
         tracing::info!("✅ Paddle transaction completed: {}", transaction_id);
         Ok(format!("Paddle transaction {} processed", transaction_id))
@@ -487,7 +487,7 @@ impl WebhookProcessor {
             WebhookEventType::TransactionFailed => {
                 self.handle_polygon_tx_failed(payload).await
             }
-            _ => Err(SubscriptionError::InvalidRequest("Unmatched event type".to_string())),
+            _ => Err(SubscriptionError::UnmatchedEventType),
         }
     }
     
@@ -495,7 +495,7 @@ impl WebhookProcessor {
         let tx_hash = payload
             .get("tx_hash")
             .and_then(|h| h.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing tx_hash".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing tx_hash".to_string()))?;
         
         tracing::info!("✅ Polygon transaction confirmed: {}", tx_hash);
         Ok(format!("Polygon TX {} confirmed", tx_hash))
@@ -505,7 +505,7 @@ impl WebhookProcessor {
         let tx_hash = payload
             .get("tx_hash")
             .and_then(|h| h.as_str())
-            .ok_or(SubscriptionError::InvalidRequest("Missing tx_hash".to_string()))?;
+            .ok_or(SubscriptionError::InvalidPayload("Missing tx_hash".to_string()))?;
         
         tracing::warn!("❌ Polygon transaction failed: {}", tx_hash);
         Ok(format!("Polygon TX {} failed", tx_hash))
@@ -547,7 +547,7 @@ fn parse_amount(formatted: &str) -> SubscriptionResult<i32> {
         .replace("$", "")
         .parse::<f64>()
         .map(|v| (v * 100.0) as i32)
-        .map_err(|_| SubscriptionError::InvalidRequest("Invalid amount".to_string()))
+        .map_err(|_| SubscriptionError::InvalidPayload("Invalid amount".to_string()))
 }
 
 fn extract_plan_from_payload(payload: &Value) -> SubscriptionResult<String> {
@@ -566,7 +566,7 @@ fn extract_plan_from_payload(payload: &Value) -> SubscriptionResult<String> {
             }
             .to_string()
         })
-        .ok_or(SubscriptionError::InvalidRequest("Missing plan info".to_string()))
+        .ok_or(SubscriptionError::InvalidPayload("Missing plan info".to_string()))
 }
 
 fn extract_price_from_payload(payload: &Value) -> SubscriptionResult<i32> {
@@ -575,7 +575,7 @@ fn extract_price_from_payload(payload: &Value) -> SubscriptionResult<i32> {
         .and_then(|d| d.get("attributes"))
         .and_then(|a| a.get("total_formatted"))
         .and_then(|t| t.as_str())
-        .ok_or(SubscriptionError::InvalidRequest("Missing price".to_string()))
+        .ok_or(SubscriptionError::InvalidPayload("Missing price".to_string()))
         .and_then(parse_amount)
 }
 
