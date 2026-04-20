@@ -47,38 +47,108 @@ upstream  https://github.com/AppFlowy-IO/AppFlowy.git (push)
 
 ---
 
+### M1.3: 数据库迁移脚本
+
+**时间**: 2026-04-20  
+**分类**: Database  
+**优先级**: HIGH
+
+| 文件 | 改动 | 说明 |
+|------|------|------|
+| `frontend/rust-lib/flowy-user/src/migrations/payment_tables_v1.rs` | 新增 | 支付系统数据库表 |
+| `frontend/rust-lib/flowy-user/src/migrations/mod.rs` | 更新 | 导入payment_tables_v1模块 |
+| `.env.example` | 新增 | 完整的环境变量配置模板 |
+
+**数据库表**：
+- `payment_orders`: Lemon Squeezy订单追踪（ID、金额、状态、时间戳）
+- `payment_products`: 产品缓存（支持多个变体定价）
+- `web3_transactions`: Polygon区块链交易日志（txhash、地址、token、确认数）
+- `user_subscription`: 用户订阅状态（计划、周期、功能开关）
+- `payment_webhooks`: Webhook事件审计日志（用于合规性）
+- `ai_usage_logs`: AI Token使用追踪（用户、token数、成本、功能类型）
+- `user_ai_quota`: 月度Token配额（限额、已用、成本）
+
+**数据库触发器**：
+- `init_ai_quota_on_subscription`: 创建订阅时自动初始化配额
+- `reset_monthly_quota_on_usage`: 跨月份时自动重置配额
+
+**Git提交**: `ee0b16035`
+
+---
+
+### M1.4: 环境变量配置
+
+**时间**: 2026-04-20  
+**分类**: Configuration
+
+创建 `.env.example` 模板，包含：
+- vLLM + frpc隧道配置
+- Token配额设置
+- Lemon Squeezy API密钥
+- Web3/Polygon RPC配置
+- WalletConnect配置
+- 数据库和日志配置
+- 安全和功能开关
+
+**指导**：复制 `.env.example` → `.env`，填入实际的API密钥和RPC地址
+
+**Git提交**: `ee0b16035`
+
+---
+
 ## 📦 计划改动（待实施）
 
-### Phase 2A: Lemon Squeezy支付集成
+### Phase 1.5: 创建flowy-subscription crate
 
-**计划完成日期**: 待定
+**计划完成日期**: 2026-04-21
 
 ```
 □ 创建flowy-subscription新crate
+□ 定义Protobuf消息格式（payment.proto）
+□ 配置Cargo.toml依赖
+□ 编写模块结构（payment/, event_handler/, repository/)
+```
+
+### Phase 2A: Lemon Squeezy支付集成
+
+**计划完成日期**: 2026-04-25
+
+```
 □ 实现Lemon Squeezy客户端
-□ 添加webhook处理
+  - POST /checkouts 创建支付页面
+  - HMAC签名验证
+  - Webhook处理
+□ 添加webhook路由和处理
 □ Flutter支付UI开发
+  - 支付页面（WebView）
+  - 订阅管理页面
+  - 成功/失败处理
 ```
 
 ### Phase 2B: 自建Token计费系统
 
-**计划完成日期**: 待定
+**计划完成日期**: 2026-05-01
 
 ```
-□ 数据库迁移脚本
 □ CloudAIService实现（Llama-2 9B + vLLM）
-□ 本地Token计数算法
-□ Token配额管理
+  - vLLM API集成
+  - frpc隧道支持
+  - 重试机制
+□ 本地Token计数算法（启发式）
+□ Token配额检查和管理
+□ 月度配额重置逻辑
+□ 成本计算和追踪
 ```
 
 ### Phase 2C: Web3集成
 
-**计划完成日期**: 待定
+**计划完成日期**: 2026-05-10
 
 ```
 □ 智能合约开发（Solidity）
-□ Polygon集成
+□ Polygon网络集成
 □ 钱包连接（WalletConnect 2.0）
+□ Web3支付流程
 ```
 
 ---
@@ -119,11 +189,13 @@ upstream  https://github.com/AppFlowy-IO/AppFlowy.git (push)
 - ✅ 三层订阅模式（Free/Pro/Team）
 
 **已完成**:
-- Git配置
-- 项目命名
+- ✅ Git配置
+- ✅ 项目命名
+- ✅ 数据库架构设计
+- ✅ 环境变量配置
 
 **进行中**:
-- 基础架构建设
+- ⏳ flowy-subscription crate创建
 
 **未开始**:
 - Lemon Squeezy集成
@@ -134,12 +206,18 @@ upstream  https://github.com/AppFlowy-IO/AppFlowy.git (push)
 
 ## 🔀 开发分支管理
 
+**当前分支**: `feature/commercial-edition-v1.0`
+
+**最近提交**：
+1. `ee0b16035` - [Database] Payment: Add database migrations for payment system
+2. `f10b9a91f` - [Configuration] Project: Rename AppFlowy to PuerceNote
+
 ```
 main (官方主分支，仅sync)
-  ├─ feature/commercial-edition-v1.0 (活跃开发)
-  │   ├─ feature/payment-system (支付系统)
-  │   ├─ feature/ai-service (AI服务)
-  │   └─ feature/web3-integration (Web3集成)
+  ├─ feature/commercial-edition-v1.0 (活跃开发) ← 当前位置
+  │   ├─ feature/payment-system (计划)
+  │   ├─ feature/ai-service (计划)
+  │   └─ feature/web3-integration (计划)
   └─ release/v1.0 (待创建)
 ```
 
