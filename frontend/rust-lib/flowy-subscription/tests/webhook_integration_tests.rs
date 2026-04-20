@@ -326,7 +326,7 @@ mod webhook_integration_tests {
     
     #[tokio::test]
     async fn test_unknown_event_type() {
-        let processor = setup_processor().await;
+        let processor = setup_processor();
         
         let payload = json!({
             "meta": {
