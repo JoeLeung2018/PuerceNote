@@ -1,5 +1,5 @@
 name: puercenote
-description: PuerceNote - AI-powered note-taking with Llama-2 9B, TinyLlama privacy protection, and Web3 integration. Commercial edition built on AppFlowy.
+description: PuerceNote - Privacy-first AI-powered note-taking workspace with local Llama-2 9B, semantic search, and Web3 integration.
 publish_to: "none"
 
 version: 0.11.4

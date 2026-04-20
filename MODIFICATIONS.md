@@ -1,32 +1,31 @@
-# PuerceNote - AppFlowy Commercial Edition v1.0
+# PuerceNote v1.0 - 开发记录
 
-## 改动记录与追踪
+## 改动追踪与版本控制
 
-**项目**: PuerceNote - AI驱动的笔记应用商业版  
-**基础**: AppFlowy 官方仓库（AGPL v3.0）  
-**分支**: `feature/commercial-edition-v1.0`  
+**项目**: PuerceNote - AI驱动的隐私优先笔记工作空间  
+**源代码分支**: `feature/commercial-edition-v1.0`  
 **启动时间**: 2026-04-20  
-**目标版本**: v1.0 (发布时间: 2025年3月)
+**目标版本**: v1.0 (发布时间: 2025年Q1)
 
 ---
 
 ## 📋 第一阶段改动（基础准备与架构）
 
-### M1.1: 项目名称更改
+### M1.1: 项目品牌化
 
 **时间**: 2026-04-20  
-**分类**: Configuration
+**分类**: Configuration | Branding
 
 | 文件 | 改动 | 说明 |
 |------|------|------|
-| `README.md` | 项目标题改为PuerceNote | 更新品牌信息 |
-| `frontend/appflowy_flutter/pubspec.yaml` | 项目名称: appflowy → puercenote | Flutter包名称 |
+| `README.md` | 重新编写为PuerceNote专属文档 | 完全独立品牌，移除上游项目标识 |
+| `frontend/appflowy_flutter/pubspec.yaml` | 项目名称: appflowy → puercenote | Flutter包名称和品牌 |
 
-**Git提交**: 待提交
+**Git提交**: f10b9a91f - [Configuration] Project: Rename AppFlowy to PuerceNote and establish development infrastructure
 
 ---
 
-### M1.2: Git远程配置
+### M1.2: 版本控制配置
 
 **时间**: 2026-04-20  
 **分类**: Git Configuration
@@ -37,13 +36,13 @@ origin  https://github.com/AppFlowy-IO/AppFlowy.git (fetch)
 origin  https://github.com/AppFlowy-IO/AppFlowy.git (push)
 
 # 修改后
-origin    https://github.com/JoeLeung2018/AppFlowy.git (fetch)
-origin    https://github.com/JoeLeung2018/AppFlowy.git (push)
+origin    https://github.com/JoeLeung2018/puercenote.git (fetch)
+origin    https://github.com/JoeLeung2018/puercenote.git (push)
 upstream  https://github.com/AppFlowy-IO/AppFlowy.git (fetch)
 upstream  https://github.com/AppFlowy-IO/AppFlowy.git (push)
 ```
 
-**目的**: 支持向JoeLeung2018账户推送，同时保持与上游仓库的连接
+**目的**: 独立开发和发布，同时维护与上游项目的同步能力
 
 ---
 
