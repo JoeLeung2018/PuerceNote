@@ -15,6 +15,7 @@ pub mod billing;
 pub mod event_handler;
 pub mod error;
 pub mod config;
+pub mod repository;
 
 // Re-export key types
 pub use error::{SubscriptionError, SubscriptionResult};
@@ -22,6 +23,7 @@ pub use payment::{PaymentClient, PaymentProvider};
 pub use subscription::{Subscription, SubscriptionPlan, SubscriptionStatus, SubscriptionService};
 pub use billing::{BillingService, TokenQuota, calculate_token_cost, count_tokens_local};
 pub use config::SubscriptionConfig;
+pub use repository::{SubscriptionRepository, PaymentOrder, SubscriptionRecord, WebhookEventLog};
 
 #[macro_use]
 extern crate async_trait;

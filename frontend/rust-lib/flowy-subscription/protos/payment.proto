@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package puercenote.payment;
+
+message PaymentOrderProto {
+    string id = 1;
+    string user_id = 2;
+    string lemon_order_id = 3;
+    int64 amount_cents = 4;
+    string currency = 5;
+    string status = 6;          // pending, completed, failed, refunded
+    string payment_method = 7;  // lemon_squeezy, web3
+    int64 created_at = 8;       // Unix timestamp
+    int64 updated_at = 9;       // Unix timestamp
+    int64 webhook_verified_at = 10;  // Optional: Unix timestamp
+}
+
+message SubscriptionStatusProto {
+    string id = 1;
+    string user_id = 2;
+    string plan_type = 3;      // free, pro, team
+    string status = 4;         // active, expired, cancelled
+    int64 period_start = 5;    // Unix timestamp
+    int64 period_end = 6;      // Unix timestamp
+    int64 renewal_date = 7;    // Optional: Unix timestamp
+    bool ai_enabled = 8;
+    bool semantic_search_enabled = 9;
+    bool collaboration_enabled = 10;
+    int64 created_at = 11;
+    int64 updated_at = 12;
+    int64 cancelled_at = 13;  // Optional: Unix timestamp
+}
+
+message WebhookEventProto {
+    string id = 1;
+    string provider = 2;     // lemon_squeezy, polygon_listener
+    string event_type = 3;   // order.completed, subscription.created, etc
+    string payload = 4;      // JSON string
+    string signature = 5;    // Optional: HMAC signature
+    string status = 6;       // received, processed, failed
+    string error_message = 7;  // Optional
+    int64 created_at = 8;    // Unix timestamp
+    int64 processed_at = 9;  // Optional: Unix timestamp
+}
+
+message UserAIQuotaProto {
+    string user_id = 1;
+    int64 monthly_limit = 2;
+    int64 tokens_used = 3;
+    int64 period_start = 4;  // Unix timestamp
+    int64 period_end = 5;    // Unix timestamp
+    double monthly_cost = 6;
+    bool quota_exceeded = 7;
+    int64 updated_at = 8;    // Unix timestamp
+}
+
+message AIUsageLogProto {
+    string id = 1;
+    string user_id = 2;
+    int64 tokens_used = 3;
+    double cost = 4;
+    string feature_type = 5;  // summary, tags, search
+    string model_used = 6;    // llama-2-9b, tinyllama-1.1b
+    string workspace_id = 7;  // Optional
+    string document_id = 8;   // Optional
+    int64 created_at = 9;     // Unix timestamp
+}
+
+// RPC service definitions
+service PaymentService {
+    rpc CreateCheckout(CheckoutRequest) returns (CheckoutResponse);
+    rpc GetSubscriptionStatus(GetSubscriptionRequest) returns (SubscriptionStatusProto);
+    rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse);
+    rpc UpdatePaymentMethod(UpdatePaymentMethodRequest) returns (UpdatePaymentMethodResponse);
+}
+
+message CheckoutRequest {
+    string user_id = 1;
+    string plan_type = 2;  // pro, team
+    string email = 3;
+}
+
+message CheckoutResponse {
+    string checkout_url = 1;
+    string session_id = 2;
+    int64 expires_at = 3;
+}
+
+message GetSubscriptionRequest {
+    string user_id = 1;
+}
+
+message CancelSubscriptionRequest {
+    string user_id = 1;
+    string reason = 2;  // Optional feedback
+}
+
+message CancelSubscriptionResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message UpdatePaymentMethodRequest {
+    string user_id = 1;
+    string payment_method = 2;  // lemon_squeezy, web3
+}
+
+message UpdatePaymentMethodResponse {
+    bool success = 1;
+    string message = 2;
+}

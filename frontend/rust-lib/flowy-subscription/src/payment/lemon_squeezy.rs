@@ -199,6 +199,182 @@ impl LemonSqueezyClient {
             )))
         }
     }
+
+    /// List all subscriptions
+    pub async fn list_subscriptions(&self) -> SubscriptionResult<Vec<SubscriptionResponse>> {
+        info!("Listing all subscriptions");
+
+        let response = self
+            .http_client
+            .get(format!(
+                "{}/v1/stores/{}/subscriptions",
+                self.config.lemon_squeezy_api_url, self.config.lemon_squeezy_store_id
+            ))
+            .bearer_auth(&self.config.lemon_squeezy_api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let subscriptions: SubscriptionListResponse = response.json().await?;
+            Ok(subscriptions.data)
+        } else {
+            let error_msg = response.text().await.unwrap_or_default();
+            Err(SubscriptionError::LemonSqueezyError(format!(
+                "Failed to list subscriptions: {}",
+                error_msg
+            )))
+        }
+    }
+
+    /// Get subscription details
+    pub async fn get_subscription(&self, subscription_id: &str) -> SubscriptionResult<SubscriptionResponse> {
+        debug!("Fetching subscription: {}", subscription_id);
+
+        let response = self
+            .http_client
+            .get(format!(
+                "{}/v1/stores/{}/subscriptions/{}",
+                self.config.lemon_squeezy_api_url, self.config.lemon_squeezy_store_id, subscription_id
+            ))
+            .bearer_auth(&self.config.lemon_squeezy_api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let sub: SubscriptionDataResponse = response.json().await?;
+            Ok(sub.data)
+        } else {
+            let error_msg = response.text().await.unwrap_or_default();
+            Err(SubscriptionError::LemonSqueezyError(format!(
+                "Failed to fetch subscription: {}",
+                error_msg
+            )))
+        }
+    }
+
+    /// Pause subscription
+    pub async fn pause_subscription(&self, subscription_id: &str) -> SubscriptionResult<SubscriptionResponse> {
+        info!("Pausing subscription: {}", subscription_id);
+
+        let body = json!({
+            "data": {
+                "type": "subscriptions",
+                "attributes": {
+                    "pause": true
+                }
+            }
+        });
+
+        let response = self
+            .http_client
+            .patch(format!(
+                "{}/v1/stores/{}/subscriptions/{}",
+                self.config.lemon_squeezy_api_url, self.config.lemon_squeezy_store_id, subscription_id
+            ))
+            .bearer_auth(&self.config.lemon_squeezy_api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let sub: SubscriptionDataResponse = response.json().await?;
+            Ok(sub.data)
+        } else {
+            let error_msg = response.text().await.unwrap_or_default();
+            Err(SubscriptionError::LemonSqueezyError(format!(
+                "Failed to pause subscription: {}",
+                error_msg
+            )))
+        }
+    }
+
+    /// Resume subscription
+    pub async fn resume_subscription(&self, subscription_id: &str) -> SubscriptionResult<SubscriptionResponse> {
+        info!("Resuming subscription: {}", subscription_id);
+
+        let body = json!({
+            "data": {
+                "type": "subscriptions",
+                "attributes": {
+                    "pause": false
+                }
+            }
+        });
+
+        let response = self
+            .http_client
+            .patch(format!(
+                "{}/v1/stores/{}/subscriptions/{}",
+                self.config.lemon_squeezy_api_url, self.config.lemon_squeezy_store_id, subscription_id
+            ))
+            .bearer_auth(&self.config.lemon_squeezy_api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let sub: SubscriptionDataResponse = response.json().await?;
+            Ok(sub.data)
+        } else {
+            let error_msg = response.text().await.unwrap_or_default();
+            Err(SubscriptionError::LemonSqueezyError(format!(
+                "Failed to resume subscription: {}",
+                error_msg
+            )))
+        }
+    }
+
+    /// Cancel subscription
+    pub async fn cancel_subscription(&self, subscription_id: &str) -> SubscriptionResult<()> {
+        info!("Cancelling subscription: {}", subscription_id);
+
+        let response = self
+            .http_client
+            .delete(format!(
+                "{}/v1/stores/{}/subscriptions/{}",
+                self.config.lemon_squeezy_api_url, self.config.lemon_squeezy_store_id, subscription_id
+            ))
+            .bearer_auth(&self.config.lemon_squeezy_api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() || response.status() == 204 {
+            info!("Subscription cancelled successfully");
+            Ok(())
+        } else {
+            let error_msg = response.text().await.unwrap_or_default();
+            Err(SubscriptionError::LemonSqueezyError(format!(
+                "Failed to cancel subscription: {}",
+                error_msg
+            )))
+        }
+    }
+
+    /// List all orders
+    pub async fn list_orders(&self) -> SubscriptionResult<Vec<OrderResponse>> {
+        info!("Listing all orders");
+
+        let response = self
+            .http_client
+            .get(format!(
+                "{}/v1/stores/{}/orders",
+                self.config.lemon_squeezy_api_url, self.config.lemon_squeezy_store_id
+            ))
+            .bearer_auth(&self.config.lemon_squeezy_api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let orders: OrderListResponse = response.json().await?;
+            Ok(orders.data)
+        } else {
+            let error_msg = response.text().await.unwrap_or_default();
+            Err(SubscriptionError::LemonSqueezyError(format!(
+                "Failed to list orders: {}",
+                error_msg
+            )))
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -234,6 +410,38 @@ pub struct OrderAttributes {
     pub status: String,
     pub total: u32,
     pub currency: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SubscriptionResponse {
+    pub id: String,
+    pub attributes: SubscriptionAttributes,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SubscriptionAttributes {
+    pub status: String,
+    pub pause: Option<bool>,
+    pub paused_at: Option<String>,
+    pub ends_at: Option<String>,
+    pub current_period_start: String,
+    pub current_period_end: String,
+    pub next_billing_at: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SubscriptionDataResponse {
+    pub data: SubscriptionResponse,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SubscriptionListResponse {
+    pub data: Vec<SubscriptionResponse>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OrderListResponse {
+    pub data: Vec<OrderResponse>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
