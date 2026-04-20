@@ -62,10 +62,10 @@ pub struct WebhookProcessor {
 }
 
 pub struct WebhookSecrets {
-    lemon_squeezy_secret: String,
-    paypal_secret: String,
-    paddle_secret: String,
-    polygon_secret: String,
+    pub lemon_squeezy_secret: String,
+    pub paypal_secret: String,
+    pub paddle_secret: String,
+    pub polygon_secret: String,
 }
 
 struct IdempotencyCache {
